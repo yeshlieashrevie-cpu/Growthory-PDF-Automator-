@@ -1,16 +1,16 @@
 import streamlit as st
 import json
-import google.generativeai as genai
+from openai import OpenAI
 from pypdf import PdfReader
 from fpdf import FPDF
 import io
 
 # 1. Configure Page
 st.set_page_config(page_title="AI Client PDF Generator", layout="wide")
-st.title("Client Report Generator")
+st.title("Client Report Generator (OpenAI)")
 
 # 2. API Key Setup
-api_key = st.text_input("Enter your Gemini API Key:", type="password")
+api_key = st.text_input("Enter your OpenAI API Key (starts with sk-):", type="password")
 
 # 3. Helper Functions
 def extract_text_from_pdf(pdf_file):
@@ -21,8 +21,8 @@ def extract_text_from_pdf(pdf_file):
     return text
 
 def generate_report_content(reference_text, client_json, api_key):
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-pro')
+    # Initialize the OpenAI Client
+    client = OpenAI(api_key=api_key)
     
     prompt = f"""
     You are an expert system designed to generate structured client reports. 
@@ -45,8 +45,12 @@ def generate_report_content(reference_text, client_json, api_key):
     {client_json}
     """
     
-    response = model.generate_content(prompt)
-    clean_text = response.text.replace("```json", "").replace("```", "").strip()
+    response = client.chat.completions.create(
+        model="gpt-4o-mini", # Snappy, highly accurate, and very cost-effective
+        messages=[{"role": "user", "content": prompt}]
+    )
+    
+    clean_text = response.choices[0].message.content.replace("```json", "").replace("```", "").strip()
     return json.loads(clean_text)
 
 def create_pdf(report_data):
@@ -87,7 +91,7 @@ with col2:
 # 5. Generation Logic
 if st.button("Generate Final PDF", type="primary"):
     if not api_key:
-        st.error("Please enter your API Key at the top.")
+        st.error("Please enter your OpenAI API Key at the top.")
     elif not reference_pdf:
         st.error("Please upload the Reference PDF.")
     elif not client_json_input:
@@ -99,7 +103,7 @@ if st.button("Generate Final PDF", type="primary"):
             with st.spinner("Step 1: Extracting text from Reference Guide..."):
                 reference_text = extract_text_from_pdf(reference_pdf)
                 
-            with st.spinner("Step 2: AI analyzing data..."):
+            with st.spinner("Step 2: OpenAI GPT is analyzing data..."):
                 report_data = generate_report_content(reference_text, client_json_input, api_key)
                 
             with st.spinner("Step 3: Creating PDF..."):
