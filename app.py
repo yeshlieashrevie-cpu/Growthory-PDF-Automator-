@@ -2,7 +2,7 @@ import streamlit as st
 import json
 import google.generativeai as genai
 from pypdf import PdfReader
-from xhtml2pdf import pisa
+from fpdf import FPDF
 import io
 
 # 1. Configure Page
@@ -20,21 +20,23 @@ def extract_text_from_pdf(pdf_file):
         text += page.extract_text() + "\n"
     return text
 
-def generate_html_report(reference_text, client_json, api_key):
-    # Fallback to universally compatible client setup
+def generate_report_content(reference_text, client_json, api_key):
     genai.configure(api_key=api_key)
     model = genai.GenerativeModel('gemini-1.5-pro')
     
     prompt = f"""
-    You are an expert system designed to generate client reports. 
+    You are an expert system designed to generate structured client reports. 
     
     Rules:
     1. You will be provided with a REFERENCE GUIDE and a set of CLIENT ANSWERS (JSON).
-    2. You must cross-reference the client answers against the reference guide.
-    3. Tailor all advice and explanations STRICTLY based on the reference guide. Do not invent outside information.
-    4. Output the final result as a clean, professional HTML document containing an ordered HTML table. 
-    5. The HTML must include basic inline CSS for styling (borders, padding, fonts) so it looks good when converted to a PDF.
-    6. DO NOT output markdown. Output RAW HTML only. Do not include ```html blocks, just the pure HTML code starting with <!DOCTYPE html>.
+    2. Cross-reference the client answers against the reference guide and tailor your advice strictly based on it.
+    3. Output your response as a clean, valid JSON list of objects representing a table. Do not output markdown code blocks, just raw JSON.
+    4. Each item in the list must have exactly three fields: "Section", "Client_Data", and "Recommendation".
+
+    Format Example:
+    [
+      {{"Section": "Introduction", "Client_Data": "John Doe", "Recommendation": "Apply standard framework."}}
+    ]
 
     REFERENCE GUIDE:
     {reference_text}
@@ -44,15 +46,32 @@ def generate_html_report(reference_text, client_json, api_key):
     """
     
     response = model.generate_content(prompt)
-    html_output = response.text.replace("```html", "").replace("```", "").strip()
-    return html_output
+    clean_text = response.text.replace("```json", "").replace("```", "").strip()
+    return json.loads(clean_text)
 
-def convert_html_to_pdf(html_string):
-    pdf_buffer = io.BytesIO()
-    pisa_status = pisa.CreatePDF(io.StringIO(html_string), dest=pdf_buffer)
-    if pisa_status.err:
-        return None
-    return pdf_buffer.getvalue()
+def create_pdf(report_data):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    
+    # Title
+    pdf.set_font("Arial", 'B', size=16)
+    pdf.cell(200, 10, txt="Tailored Client Report", ln=True, align='C')
+    pdf.ln(10)
+    
+    # Write Sections
+    for row in report_data:
+        pdf.set_font("Arial", 'B', size=12)
+        pdf.cell(200, 8, txt=f"Section: {row.get('Section', 'N/A')}", ln=True)
+        
+        pdf.set_font("Arial", 'I', size=11)
+        pdf.cell(200, 6, txt=f"Client Input: {row.get('Client_Data', 'N/A')}", ln=True)
+        
+        pdf.set_font("Arial", size=11)
+        pdf.multi_cell(0, 6, txt=f"Recommendation: {row.get('Recommendation', 'N/A')}")
+        pdf.ln(6)
+        
+    return pdf.output(dest='S')
 
 # 4. User Interface
 col1, col2 = st.columns(2)
@@ -63,7 +82,7 @@ with col1:
 
 with col2:
     st.subheader("2. Paste Client Answers")
-    client_json_input = st.text_area("Paste JSON Data here", height=200, placeholder='{"client_name": "John Doe", "goal": "weight loss"...}')
+    client_json_input = st.text_area("Paste JSON Data here", height=200, placeholder='{"client_name": "John Doe"}')
 
 # 5. Generation Logic
 if st.button("Generate Final PDF", type="primary"):
@@ -80,11 +99,11 @@ if st.button("Generate Final PDF", type="primary"):
             with st.spinner("Step 1: Extracting text from Reference Guide..."):
                 reference_text = extract_text_from_pdf(reference_pdf)
                 
-            with st.spinner("Step 2: AI is analyzing answers and generating tailored table..."):
-                html_report = generate_html_report(reference_text, client_json_input, api_key)
+            with st.spinner("Step 2: AI analyzing data..."):
+                report_data = generate_report_content(reference_text, client_json_input, api_key)
                 
-            with st.spinner("Step 3: Converting output to Final PDF..."):
-                pdf_bytes = convert_html_to_pdf(html_report)
+            with st.spinner("Step 3: Creating PDF..."):
+                pdf_bytes = create_pdf(report_data)
                 
             if pdf_bytes:
                 st.success("PDF Generated Successfully!")
@@ -94,13 +113,8 @@ if st.button("Generate Final PDF", type="primary"):
                     file_name="Tailored_Client_Report.pdf",
                     mime="application/pdf"
                 )
-                
-                with st.expander("Preview Generated HTML Table"):
-                    st.components.v1.html(html_report, height=400, scrolling=True)
             else:
-                st.error("Failed to generate PDF from HTML.")
+                st.error("Failed to build PDF binary.")
                 
-        except json.JSONDecodeError:
-            st.error("Invalid JSON format. Please check your client answers data.")
         except Exception as e:
             st.error(f"An error occurred: {e}")
