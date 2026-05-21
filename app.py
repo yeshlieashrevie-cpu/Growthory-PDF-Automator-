@@ -3,7 +3,6 @@ import json
 from groq import Groq
 from pypdf import PdfReader
 from fpdf import FPDF
-import io
 
 # 1. Configure Page
 st.set_page_config(page_title="AI Client PDF Generator", layout="wide")
@@ -130,12 +129,15 @@ if st.button("Generate Final PDF", type="primary"):
                 report_data = generate_report_content(reference_text, client_json_input, api_key)
                 
             with st.spinner("Step 3: Creating PDF..."):
-                pdf_bytes = create_pdf(report_data)
+                pdf_output = create_pdf(report_data)
                 
-            if pdf_bytes:
+            if pdf_output:
+                # Force the output into a clean bytes format Streamlit understands
+                pdf_bytes = bytes(pdf_output)
+                
                 st.success("PDF Generated Successfully!")
                 st.download_button(
-                    label="Download Client PDF",
+                    label="📥 Download Client PDF",
                     data=pdf_bytes,
                     file_name="Tailored_Client_Report.pdf",
                     mime="application/pdf"
