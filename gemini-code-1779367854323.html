@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GridsterGP // Premium PDF Engine</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="ambient-glow glow-violet"></div>
+    <div class="ambient-glow glow-lime"></div>
+
+    <div class="desktop-container">
+        
+        <header class="glass-panel header-panel">
+            <div class="brand">
+                <div class="logo-mark">⚡</div>
+                <h1>GRIDSTER<span>GP</span></h1>
+                <span class="badge">v2.0 Premium Engine</span>
+            </div>
+            
+            <div class="pipeline-tracker">
+                <div class="step active" id="step-auth">
+                    <span class="step-num">01</span>
+                    <span class="step-name">Auth</span>
+                </div>
+                <div class="pipeline-line" id="line-1"></div>
+                <div class="step" id="step-guide">
+                    <span class="step-num">02</span>
+                    <span class="step-name">Reference</span>
+                </div>
+                <div class="pipeline-line" id="line-2"></div>
+                <div class="step" id="step-payload">
+                    <span class="step-num">03</span>
+                    <span class="step-name">Payload</span>
+                </div>
+                <div class="pipeline-line" id="line-3"></div>
+                <div class="step" id="step-ready">
+                    <span class="step-num">04</span>
+                    <span class="step-name">Execute</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="workspace-grid">
+            
+            <section class="control-column">
+                
+                <div class="glass-panel input-card interactive-card" id="card-api">
+                    <div class="card-header">
+                        <div class="step-indicator">1</div>
+                        <h3>Gemini Engine Core</h3>
+                    </div>
+                    <p class="card-desc">Provide your master API key to power up the generative system models.</p>
+                    <div class="input-wrapper">
+                        <input type="password" id="api-key" placeholder="Enter Gemini API Key (starts with AIza)...">
+                        <span class="status-dot"></span>
+                    </div>
+                </div>
+
+                <div class="glass-panel input-card interactive-card" id="card-upload">
+                    <div class="card-header">
+                        <div class="step-indicator">2</div>
+                        <h3>Upload Master Reference Guide</h3>
+                    </div>
+                    <div class="drop-zone" id="drop-zone">
+                        <div class="drop-zone-icon">📁</div>
+                        <p class="drop-zone-text">Drag master PDF here or <span class="highlight">browse files</span></p>
+                        <input type="file" id="pdf-file" accept=".pdf" hidden>
+                        <div class="file-chip" id="file-chip">
+                            <span class="file-name">No file selected</span>
+                            <button type="button" class="remove-file-btn" id="remove-file">×</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel input-card interactive-card" id="card-json">
+                    <div class="card-header">
+                        <div class="step-indicator">3</div>
+                        <h3>Paste Client Answers</h3>
+                        <span class="json-badge invalid" id="json-status">Waiting for data</span>
+                    </div>
+                    <div class="json-wrapper">
+                        <textarea id="json-data" placeholder='{&#10;  "client_name": "John Doe",&#10;  "goal": "Performance Optimization"&#10;}'></textarea>
+                    </div>
+                </div>
+
+                <div class="action-center">
+                    <button id="generate-btn" class="engine-btn" disabled>
+                        <span class="btn-glow"></span>
+                        <span class="btn-text">INITIALIZE REPORT GENERATION</span>
+                    </button>
+                </div>
+
+            </section>
+
+            <section class="preview-column">
+                <div class="glass-panel output-card">
+                    <div class="output-header">
+                        <div class="live-status">
+                            <span class="pulse-indicator"></span>
+                            <h3>System Core Console</h3>
+                        </div>
+                        <div class="output-actions">
+                            <button id="download-btn" class="action-btn download-disabled" disabled>📥 Download Final PDF</button>
+                        </div>
+                    </div>
+
+                    <div class="terminal-screen" id="terminal-screen">
+                        <div class="welcome-screen" id="welcome-message">
+                            <div class="engine-graphic">
+                                <div class="orbit-ring ring-1"></div>
+                                <div class="orbit-ring ring-2"></div>
+                                <div class="core-dot"></div>
+                            </div>
+                            <h4>Engine Core Idling</h4>
+                            <p>Complete steps 1-3 on the left panel to authorize and initialize the PDF compiling pipeline sequence.</p>
+                        </div>
+
+                        <div class="processing-screen hidden" id="processing-message">
+                            <div class="dna-spinner">
+                                <div class="bar"></div>
+                                <div class="bar"></div>
+                                <div class="bar"></div>
+                            </div>
+                            <h4 id="progress-text">Extracting Reference Data Matrix...</h4>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill" id="progress-fill"></div>
+                            </div>
+                        </div>
+
+                        <div class="render-frame hidden" id="render-view">
+                            <iframe id="html-preview" title="Report Preview Frame"></iframe>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
