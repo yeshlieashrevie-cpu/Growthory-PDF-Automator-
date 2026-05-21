@@ -1,8 +1,7 @@
 streamlit
-google-generativeai
+google-genai
 pypdf
 xhtml2pdf
-    ```
   
   
     1. Go to **github.com** and sign up for a free account.
