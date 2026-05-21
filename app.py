@@ -1,18 +1,66 @@
 import streamlit as st
 import json
 import requests
-from groq import Groq
+import anthropic  # Updated framework engine
 from pypdf import PdfReader
-import io
+import streamlit.components.v1 as components
 
-# 1. Configure Page Layout
+# ==============================================================
+# 1. PAGE LAYOUT CONFIGURATION & FRONTEND ASSET LOADING
+# ==============================================================
 st.set_page_config(page_title="AI Client PDF Generator", layout="wide")
-st.title("Client Report Generator (Premium PDF Engine)")
 
-# 2. API Key Setup
-api_key = st.text_input("Enter your Free Groq API Key (starts with gsk_):", type="password")
+def load_custom_frontend():
+    try:
+        # Open and read the HTML file from your root GitHub folder
+        with open("index.html", "r", encoding="utf-8") as f:
+            html_content = f.read()
+            
+        # Open and read your custom styles
+        with open("style.css", "r", encoding="utf-8") as f:
+            css_content = f.read()
+            
+        # Open and read your custom scripts
+        with open("script.js", "r", encoding="utf-8") as f:
+            js_content = f.read()
+            
+        # Splice them all together into a clean, running page payload
+        full_frontend = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                {css_content}
+            </style>
+        </head>
+        <body>
+            {html_content}
+            <script>
+                {js_content}
+            </script>
+        </body>
+        </html>
+        """
+        return full_frontend
+    except FileNotFoundError:
+        # Fallback layout if frontend assets are missing or loading incorrectly
+        return None
 
-# 3. Helper Functions
+# Attempt to mount your handcrafted frontend layout
+frontend_html = load_custom_frontend()
+
+if frontend_html:
+    # Renders your index.html / style.css / script.js cleanly on screen
+    components.html(frontend_html, height=680, scrolling=True)
+else:
+    # Standard Title layout fallback if files aren't found locally yet
+    st.title("Client Report Generator (Premium Claude Engine)")
+
+
+# ==============================================================
+# 2. HELPER FUNCTIONS & ANTHROPIC AI ENGINE
+# ==============================================================
 def extract_text_from_pdf(pdf_file):
     reader = PdfReader(pdf_file)
     text = ""
@@ -21,8 +69,10 @@ def extract_text_from_pdf(pdf_file):
     return text
 
 def generate_html_report(reference_text, client_json, api_key):
-    client = Groq(api_key=api_key)
+    # Initialize the official Anthropic Developer client connection
+    client = anthropic.Anthropic(api_key=api_key)
 
+    # Your highly optimized, street-smart consultant prompt variation
     prompt = f"""
 You are a warm, sharp, street-smart business consultant who has spent 10+ years helping small café owners in the Philippines grow their repeat customer base. You write the way a trusted mentor talks — clear, direct, friendly, and deeply personal. You do NOT write like a corporate report. You write like a smart friend who genuinely wants this café to win.
 
@@ -129,7 +179,7 @@ Output a beautifully styled, professional, print-ready HTML document. Follow eve
 2. Use an embedded <style> tag in the <head>. Do NOT use external CSS files or CDN links.
 3. FONTS: Use Google Fonts import for 'Playfair Display' (headings) and 'Lato' (body). Add this at the top of your style block:
    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@300;400;700&display=swap');
-4. COLOR PALETTE: 
+4. COLOR PALETTE:
    - Primary heading color: #1a1a2e (deep navy)
    - Accent / highlight color: #c8963e (warm gold)
    - Section background strips: #f9f6f0 (warm cream)
@@ -171,21 +221,21 @@ CLIENT INTAKE DATA:
 {client_json}
 """
 
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.45,  # Slightly higher for warmth/personality, still grounded to template facts
-        max_tokens=8000
+    # Calling Claude 3.5 Sonnet structure via Anthropic Messages SDK
+    response = client.messages.create(
+        model="claude-3-5-sonnet-20241022",
+        max_tokens=8192,  # Maximum content generation threshold
+        temperature=0.45,
+        messages=[{"role": "user", "content": prompt}]
     )
-
-    # Strip away any accidental markdown blocks if the model includes them
-    html_output = response.choices[0].message.content.replace("```html", "").replace("```", "").strip()
+    
+    # Retrieve raw text from Claude payload
+    raw_html = response.content[0].text
+    html_output = raw_html.replace("```html", "").replace("```", "").strip()
     return html_output
 
 def convert_html_to_pdf_via_api(html_string):
     try:
-        # Utilizing an open-source, zero-config HTML-to-PDF compiler pipeline
-        # It takes the HTML/CSS template and turns it into a perfectly formatted PDF binary
         response = requests.post(
             "https://html-to-pdf-converter.open-api.io/pdf",
             json={
@@ -200,10 +250,8 @@ def convert_html_to_pdf_via_api(html_string):
         )
         if response.status_code == 200:
             return response.content
-        else:
-            return None
+        return None
     except Exception:
-        # Fallback to an alternate microservice endpoint if the main pipeline is busy
         try:
             response = requests.post("https://api.html2pdf.app/v1/generate", json={"html": html_string}, timeout=60)
             if response.status_code == 200:
@@ -211,21 +259,19 @@ def convert_html_to_pdf_via_api(html_string):
         except Exception:
             return None
 
-# 4. User Interface Layout
-col1, col2 = st.columns(2)
-
-with col1:
-    st.subheader("1. Upload Reference Guide")
+# ==============================================================
+# 3. CONTROL PANEL INPUTS & LOGIC EXECUTION
+# ==============================================================
+with st.sidebar:
+    st.header("⚙️ App Engine Control Panel")
+    api_key = st.text_input("Enter Anthropic API Key (starts with sk-ant-):", type="password")
     reference_pdf = st.file_uploader("Upload Master PDF Guide", type=["pdf"])
+    client_json_input = st.text_area("Paste JSON Data here", height=150, placeholder='{"client_name": "John Doe"}')
+    submit_btn = st.button("Generate Final PDF", type="primary")
 
-with col2:
-    st.subheader("2. Paste Client Answers")
-    client_json_input = st.text_area("Paste JSON Data here", height=200, placeholder='{"client_name": "John Doe"}')
-
-# 5. Generation and Processing Logic
-if st.button("Generate Final PDF", type="primary"):
+if submit_btn:
     if not api_key:
-        st.error("Please enter your Groq API Key at the top.")
+        st.error("Please enter your Anthropic API Key at the top left.")
     elif not reference_pdf:
         st.error("Please upload the Reference PDF.")
     elif not client_json_input:
@@ -237,7 +283,7 @@ if st.button("Generate Final PDF", type="primary"):
             with st.spinner("Step 1: Extracting structure from Reference Guide..."):
                 reference_text = extract_text_from_pdf(reference_pdf)
 
-            with st.spinner("Step 2: Senior AI Consultant is formulating your comprehensive HTML report..."):
+            with st.spinner("Step 2: Claude Senior Consultant is building your custom HTML blueprint..."):
                 html_report = generate_html_report(reference_text, client_json_input, api_key)
 
             with st.spinner("Step 3: Compiling HTML styles into a Premium PDF eBook..."):
@@ -246,7 +292,7 @@ if st.button("Generate Final PDF", type="primary"):
             if pdf_bytes:
                 st.success("Premium PDF Generated Successfully!")
                 st.download_button(
-                    label="📥 Download Complete Client Blueprint",
+                    label="📥 Download Complete Claude Blueprint",
                     data=pdf_bytes,
                     file_name="Tailored_Complete_Brand_Blueprint.pdf",
                     mime="application/pdf"
