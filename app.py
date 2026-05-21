@@ -1,6 +1,6 @@
 import streamlit as st
 import json
-import google.generativeai as genai
+import google.genai as genai
 from pypdf import PdfReader
 from xhtml2pdf import pisa
 import io
@@ -11,8 +11,6 @@ st.title("Client Report Generator")
 
 # 2. API Key Setup
 api_key = st.text_input("Enter your Gemini API Key:", type="password")
-if api_key:
-    genai.configure(api_key=api_key)
 
 # 3. Helper Functions
 def extract_text_from_pdf(pdf_file):
@@ -22,9 +20,9 @@ def extract_text_from_pdf(pdf_file):
         text += page.extract_text() + "\n"
     return text
 
-def generate_html_report(reference_text, client_json):
-    # Use Gemini 1.5 Pro for its massive context window
-    model = genai.GenerativeModel('gemini-1.5-pro')
+def generate_html_report(reference_text, client_json, api_key):
+    # Initialize the updated official Google client
+    client = genai.Client(api_key=api_key)
     
     prompt = f"""
     You are an expert system designed to generate client reports. 
@@ -44,15 +42,16 @@ def generate_html_report(reference_text, client_json):
     {client_json}
     """
     
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model='gemini-1.5-pro',
+        contents=prompt,
+    )
     # Clean up any potential markdown formatting the AI might add
-    html_output = response.text.replace("
-```html", "").replace("```", "").strip()
+    html_output = response.text.replace("```html", "").replace("```", "").strip()
     return html_output
 
 def convert_html_to_pdf(html_string):
     pdf_buffer = io.BytesIO()
-    # pisa converts HTML to PDF
     pisa_status = pisa.CreatePDF(io.StringIO(html_string), dest=pdf_buffer)
     if pisa_status.err:
         return None
@@ -86,7 +85,7 @@ if st.button("Generate Final PDF", type="primary"):
                 reference_text = extract_text_from_pdf(reference_pdf)
                 
             with st.spinner("Step 2: AI is analyzing answers and generating tailored table..."):
-                html_report = generate_html_report(reference_text, client_json_input)
+                html_report = generate_html_report(reference_text, client_json_input, api_key)
                 
             with st.spinner("Step 3: Converting output to Final PDF..."):
                 pdf_bytes = convert_html_to_pdf(html_report)
