@@ -1,6 +1,6 @@
 import streamlit as st
 import json
-import google.genai as genai
+import google.generativeai as genai
 from pypdf import PdfReader
 from xhtml2pdf import pisa
 import io
@@ -21,8 +21,9 @@ def extract_text_from_pdf(pdf_file):
     return text
 
 def generate_html_report(reference_text, client_json, api_key):
-    # Initialize the updated official Google client
-    client = genai.Client(api_key=api_key)
+    # Fallback to universally compatible client setup
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel('gemini-1.5-pro')
     
     prompt = f"""
     You are an expert system designed to generate client reports. 
@@ -42,11 +43,7 @@ def generate_html_report(reference_text, client_json, api_key):
     {client_json}
     """
     
-    response = client.models.generate_content(
-        model='gemini-1.5-pro',
-        contents=prompt,
-    )
-    # Clean up any potential markdown formatting the AI might add
+    response = model.generate_content(prompt)
     html_output = response.text.replace("```html", "").replace("```", "").strip()
     return html_output
 
@@ -78,7 +75,6 @@ if st.button("Generate Final PDF", type="primary"):
         st.error("Please paste the client JSON data.")
     else:
         try:
-            # Validate JSON
             json.loads(client_json_input)
             
             with st.spinner("Step 1: Extracting text from Reference Guide..."):
