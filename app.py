@@ -54,7 +54,6 @@ def generate_report_content(reference_text, client_json, api_key):
 
 def create_pdf(report_data):
     pdf = FPDF()
-    pdf.configure_core_fonts_substitution()
     pdf.add_page()
     
     # Title
@@ -62,9 +61,12 @@ def create_pdf(report_data):
     pdf.cell(200, 10, txt="Tailored Client Report", ln=True, align='C')
     pdf.ln(10)
     
+    # Secure string formatter to safely clean currency and special symbols
     def clean_text(text):
         if not text:
             return "N/A"
+        
+        # Explicitly map complex characters into strings Helvetica natively understands
         replacements = {
             "₱": "PHP ",
             "–": "-",
@@ -76,6 +78,8 @@ def create_pdf(report_data):
         }
         for bad_char, good_char in replacements.items():
             text = text.replace(bad_char, good_char)
+            
+        # Fallback filter: safely ignore any remaining unsupported unicode symbols
         return text.encode('latin-1', 'ignore').decode('latin-1')
 
     # Write Sections
