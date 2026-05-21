@@ -1,7 +1,7 @@
 streamlit
-    google-generativeai
-    pypdf
-    xhtml2pdf
+google-generativeai
+pypdf
+xhtml2pdf
     ```
   
   
