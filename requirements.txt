@@ -2,34 +2,3 @@ streamlit
 google-genai
 pypdf
 xhtml2pdf
-  
-  
-    1. Go to **github.com** and sign up for a free account.
-    2. Once logged in, look for a green button that says **New** (or "New Repository"). A "repository" is just a fancy word for a folder.
-    3. Name your folder whatever you want (e.g., `client-pdf-maker`).
-    4. Scroll down and click the green **Create repository** button.
-    5. On the next screen, click the small link that says **"uploading an existing file"**.
-    6. Drag and drop your `app.py` and `requirements.txt` files onto the screen.
-    7. Click the green **Commit changes** button. (Commit just means "Save").
-  
-  
-    1. Go to **share.streamlit.io** and click "Sign up". 
-    2. Choose **Continue with GitHub**. This links your Kitchen to your Recipe Book.
-    3. Once you are logged in, click the blue **Create app** button at the top right.
-    4. Click **Yep, I have an app**.
-    5. It will ask for your repository (the folder you just made on GitHub). Click the dropdown menu and select it.
-    6. Ensure the "Main file path" says `app.py`.
-    7. Click **Deploy!**
-    
-    > Streamlit will now take a few minutes to build your app. You will see some text scrolling by — just let it do its thing. When it's done, your website will appear on the screen!
-  
-  
-    Look at the web address bar at the top of your screen (it will look something like `[https://your-app-name.streamlit.app](https://your-app-name.streamlit.app)`). 
-    
-    1. Open the web browser on your smartphone (Safari for iPhone, Chrome for Android).
-    2. Type in that exact web address. Your AI generator will load on your phone!
-    3. **To make it an app:** 
-       * **iPhone:** Tap the "Share" button at the bottom (the square with the arrow pointing up) and tap **Add to Home Screen**.
-       * **Android:** Tap the three dots at the top right of Chrome and tap **Add to Home Screen**.
-       
-    Now, you have an icon on your phone that opens your AI tool directly, just like a downloaded app.
